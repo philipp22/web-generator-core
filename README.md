@@ -1,3 +1,3 @@
 # web-generator-core
 
-Generator to generate artifacts from textural class diagram files
+Generator to generate artifacts from textual class diagram files
