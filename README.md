@@ -12,3 +12,7 @@ ANTLR- and template-based generator library to generate artifacts from textual c
   * Each transformer receives the DomainAST content as input (either all domain classes at once or one by one) and registers new elements in the TargetAST
   * TargetAST represents the concrete structure of the target system, i.e. which classes, enums, interfaces etc. exist
 4. Artifacts are generated from TargetAST based on default templates or, if registered during the transformation process, using specific templates for each TargetAST node
+
+## Build
+
+To build the project, run `mvn clean install`.
