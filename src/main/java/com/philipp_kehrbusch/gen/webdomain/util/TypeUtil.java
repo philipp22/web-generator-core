@@ -1,5 +1,7 @@
 package com.philipp_kehrbusch.gen.webdomain.util;
 
+import java.util.regex.Pattern;
+
 public class TypeUtil {
 
   public static String javaToTypescript(String type) {
@@ -8,6 +10,11 @@ public class TypeUtil {
     }
     if (type.equals("String")) {
       return "string";
+    }
+    if (type.matches("List<.*>")) {
+      String regex = "List<(.*)>";
+      type = type.replaceAll(regex, "$1");
+      return javaToTypescript(type) + "[]";
     }
     return type;
   }

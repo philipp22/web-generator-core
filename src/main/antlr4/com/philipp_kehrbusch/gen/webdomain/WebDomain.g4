@@ -18,6 +18,8 @@ WHITESPACE : (' ' | '\t' | '\n' | '\r')+ -> skip ;
 
 DOMAIN : 'd' 'o' 'm' 'a' 'i' 'n' ;
 
+REST : 'r' 'e' 's' 't' ;
+
 NAME: NAME_FRAG ;
 
 OPTIONAL : '?' ;
@@ -27,7 +29,16 @@ artifact: domain* ;
 domain:
 	annotations=ANNOTATION*
 	DOMAIN name=NAME '{'
-		constants=attribute*
+		attributes=attribute*
+		rest?
 	'}' ;
+
+rest:
+	REST '{'
+		methods=restMethod+
+	'}';
+
+restMethod:
+	httpMethod=NAME+ ':' returnType=NAME+ ';' ;
 
 attribute: annotations=ANNOTATION* type=NAME name=NAME (optional=OPTIONAL)? ';' ;

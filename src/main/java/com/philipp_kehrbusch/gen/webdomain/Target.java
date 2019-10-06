@@ -7,13 +7,16 @@ public class Target {
 
   private String language;
   private String basePath;
+  private String basePathHandcoded;
   private FileNameResolver resolver;
   private String artifactTemplatePath;
   private String basePackage;
 
-  public Target(String language, String basePath, FileNameResolver resolver, String artifactTemplatePath, String basePackage) {
+  public Target(String language, String basePath, String basePathHandcoded, FileNameResolver resolver,
+                String artifactTemplatePath, String basePackage) {
     this.language = language;
     this.basePath = basePath;
+    this.basePathHandcoded = basePathHandcoded;
     this.resolver = resolver;
     this.artifactTemplatePath = artifactTemplatePath;
     this.basePackage = basePackage;
@@ -57,5 +60,13 @@ public class Target {
 
   public void setArtifactTemplatePath(String artifactTemplatePath) {
     this.artifactTemplatePath = artifactTemplatePath;
+  }
+
+  public String getBasePathHandcoded() {
+    return basePathHandcoded;
+  }
+
+  public void setBasePathHandcoded(String basePathHandcoded) {
+    this.basePathHandcoded = basePathHandcoded;
   }
 }

@@ -3,6 +3,7 @@ package com.philipp_kehrbusch.gen.webdomain.templates;
 import com.philipp_kehrbusch.gen.webdomain.Target;
 import com.philipp_kehrbusch.gen.webdomain.target.WebElement;
 import com.philipp_kehrbusch.gen.webdomain.target.cd.CDNode;
+import com.philipp_kehrbusch.gen.webdomain.util.GenUtils;
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
@@ -40,19 +41,36 @@ public class TemplateController {
 
     try {
       var template = cfg.getTemplate(target.getArtifactTemplatePath());
-      var path = Paths.get(target.getBasePath(), target.getBasePackage().replace(".", "/"),
-              element.getPath());
-      var parentDir = path.toFile();
-      if (!parentDir.exists()) {
-        parentDir.mkdirs();
-      }
-      element.setBasePath(target.getBasePackage());
-      var file = new File(Paths.get(path.toString(), target.getResolver().resolve(element.getName())).toString());
+      var file = GenUtils.getGenPath(target, element, true);
+      file = adjustForHandcoded(element, target, file);
       var writer = new FileWriter(file);
       template.process(currentInput, writer);
     } catch (IOException | TemplateException e) {
       e.printStackTrace();
     }
+  }
+
+  private File adjustForHandcoded(WebElement element, Target target, File file) {
+    var doesHandcodedExist = new File(file.getAbsolutePath().replace(
+            target.getBasePath(), target.getBasePathHandcoded())).exists();
+    if (doesHandcodedExist) {
+      var newFile = new File(file.getAbsolutePath().replace(
+              target.getResolver().resolve(element.getName()),
+              target.getResolver().resolve("Super" + element.getName())));
+      element.setName("Super" + element.getName());
+
+      element.getArtifact().getClasses().forEach(clazz -> {
+        clazz.setGeneratedName("Super" + clazz.getName());
+        clazz.getConstructors().forEach(constructor -> constructor.setName("Super" + clazz.getName()));
+
+        if (clazz.getAnnotations().contains("@Entity")) {
+          clazz.getAnnotations().remove("@Entity");
+          clazz.getAnnotations().add("@MappedSuperclass");
+        }
+      });
+      return newFile;
+    }
+    return file;
   }
 
   public void signature(String... signatureArgs) throws Exception {

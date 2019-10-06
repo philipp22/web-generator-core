@@ -1,6 +1,7 @@
 package com.philipp_kehrbusch.gen.webdomain.util;
 
 import com.philipp_kehrbusch.gen.webdomain.WebDomainParser;
+import com.philipp_kehrbusch.gen.webdomain.source.domain.RawAttribute;
 import com.philipp_kehrbusch.gen.webdomain.target.builders.CDArgumentBuilder;
 import com.philipp_kehrbusch.gen.webdomain.target.builders.CDMethodBuilder;
 import com.philipp_kehrbusch.gen.webdomain.target.cd.CDMethod;
@@ -8,29 +9,29 @@ import com.philipp_kehrbusch.gen.webdomain.templates.TemplateManager;
 
 public class MethodUtil {
 
-  public static CDMethod createGetter(WebDomainParser.AttributeContext attribute) {
+  public static CDMethod createGetter(RawAttribute attribute) {
     var getter = new CDMethodBuilder()
-            .name("get" + StringUtil.firstUpper(attribute.name.getText()))
-            .returnType(attribute.type.getText())
+            .name("get" + StringUtil.firstUpper(attribute.getName()))
+            .returnType(attribute.getType())
             .addModifier("public")
             .build();
     TemplateManager.getInstance().setTemplate(getter, "java/methods/Getter.ftl",
-            attribute.name.getText());
+            attribute.getName());
     return getter;
   }
 
-  public static CDMethod createSetter(WebDomainParser.AttributeContext attribute) {
+  public static CDMethod createSetter(RawAttribute attribute) {
     var setter = new CDMethodBuilder()
-            .name("set" + StringUtil.firstUpper(attribute.name.getText()))
+            .name("set" + StringUtil.firstUpper(attribute.getName()))
             .returnType("void")
             .addArgument(new CDArgumentBuilder()
-                    .name(attribute.name.getText())
-                    .type(attribute.type.getText())
+                    .name(attribute.getName())
+                    .type(attribute.getType())
                     .build())
             .addModifier("public")
             .build();
     TemplateManager.getInstance().setTemplate(setter, "java/methods/Setter.ftl",
-            attribute.name.getText());
+            attribute.getName());
     return setter;
   }
 

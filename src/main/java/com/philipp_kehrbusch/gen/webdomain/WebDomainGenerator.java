@@ -1,9 +1,9 @@
 package com.philipp_kehrbusch.gen.webdomain;
 
+import com.philipp_kehrbusch.gen.webdomain.source.domain.RawDomain;
 import com.philipp_kehrbusch.gen.webdomain.target.WebElement;
 import com.philipp_kehrbusch.gen.webdomain.target.cd.CDClass;
 import com.philipp_kehrbusch.gen.webdomain.templates.TemplateController;
-import com.philipp_kehrbusch.gen.webdomain.templates.TemplateManager;
 import com.philipp_kehrbusch.gen.webdomain.trafos.*;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -52,26 +52,18 @@ public class WebDomainGenerator {
         domains.addAll(artifact.domain());
       }
 
-      var tm = TemplateManager.getInstance();
-      var elements = new ArrayList<WebElement>();
+      var elements = new WebElements();
       var generator = new TemplateController();
-
-      var domainTrafo = getDomainTrafo(settings.getTrafoBasePackage());
-      callDomainTrafo(domainTrafo, getTransformMethod(domainTrafo), domains, elements);
-
-      var domainClasses = elements.stream()
-              .filter(el -> el.getArtifact().getClasses().size() > 0)
-              .map(el -> el.getArtifact().getClasses().get(0))
-              .collect(Collectors.toList());
+      var rawDomainClasses = new RawDomainTrafo().transform(domains, settings);
 
       for (var trafo : getGlobalTrafos(settings.getTrafoBasePackage())) {
         var transform = getTransformMethod(trafo.getTrafoClass());
-        callGlobalTransform(trafo.getTrafoClass(), transform, domainClasses, elements);
+        callGlobalTransform(trafo.getTrafoClass(), transform, rawDomainClasses, elements);
       }
 
       for (var trafo : getSingleTrafos(settings.getTrafoBasePackage())) {
         var transform = getTransformMethod(trafo.getTrafoClass());
-        for (var domainClass : domainClasses) {
+        for (var domainClass : rawDomainClasses) {
           if (isIncluded(trafo, domainClass)) {
             callSingleTransform(trafo.getTrafoClass(), transform, domainClass, elements);
           }
@@ -89,7 +81,7 @@ public class WebDomainGenerator {
     }
   }
 
-  private boolean isIncluded(Trafo trafo, CDClass domain) {
+  private boolean isIncluded(Trafo trafo, RawDomain domain) {
     var included = trafo.getIncludeAnnotations().length == 0 ||
             domain.getAnnotations().stream().anyMatch(annotation ->
                     Arrays.asList(trafo.getIncludeAnnotations()).contains(annotation.substring(1)));
@@ -149,11 +141,24 @@ public class WebDomainGenerator {
 
   private void callGlobalTransform(Class<?> trafoClass,
                                    Method transform,
-                                   List<CDClass> domainClasses,
-                                   List<WebElement> elements) throws TrafoConstructorMissingException {
+                                   RawDomains domainClasses,
+                                   WebElements elements) throws WebDomainGeneratorException {
     var trafo = getTrafoInstance(trafoClass);
     try {
-      transform.invoke(trafo, domainClasses, elements, settings);
+      var params = new Object[transform.getParameterCount()];
+      for (int i = 0; i < transform.getParameterCount(); i++) {
+        var paramType = transform.getParameterTypes()[i];
+        if (paramType == RawDomains.class) {
+          params[i] = domainClasses;
+        } else if (paramType == GeneratorSettings.class) {
+          params[i] = settings;
+        } else if (paramType == WebElements.class) {
+          params[i] = elements;
+        } else {
+          throw new UnknownTrafoArgumentException(paramType.getTypeName(), paramType.getName());
+        }
+      }
+      transform.invoke(trafo, params);
     } catch (IllegalAccessException | InvocationTargetException e) {
       e.printStackTrace();
     }
@@ -161,11 +166,24 @@ public class WebDomainGenerator {
 
   private void callSingleTransform(Class<?> trafoClass,
                                    Method transform,
-                                   CDClass domainClass,
-                                   List<WebElement> elements) throws TrafoConstructorMissingException {
+                                   RawDomain domainClass,
+                                   WebElements elements) throws WebDomainGeneratorException {
     var trafo = getTrafoInstance(trafoClass);
     try {
-      transform.invoke(trafo, domainClass, elements, settings);
+      var params = new Object[transform.getParameterCount()];
+      for (int i = 0; i < transform.getParameterCount(); i++) {
+        var paramType = transform.getParameterTypes()[i];
+        if (paramType == RawDomain.class) {
+          params[i] = domainClass;
+        } else if (paramType == GeneratorSettings.class) {
+          params[i] = settings;
+        } else if (paramType == WebElements.class) {
+          params[i] = elements;
+        } else {
+          throw new UnknownTrafoArgumentException(paramType.getTypeName(), paramType.getName());
+        }
+      }
+      transform.invoke(trafo, params);
     } catch (IllegalAccessException | InvocationTargetException e) {
       e.printStackTrace();
     }

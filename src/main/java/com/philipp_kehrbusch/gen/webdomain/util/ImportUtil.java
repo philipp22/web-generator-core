@@ -9,6 +9,7 @@ public class ImportUtil {
   public static List<String> getDefaultImports() {
     return new ArrayList<>(Arrays.asList(
             "java.util.*",
+            "java.util.stream.*",
             "java.time.*"
     ));
   }
