@@ -2,7 +2,6 @@ package com.philipp_kehrbusch.gen.webdomain;
 
 import com.philipp_kehrbusch.gen.webdomain.source.domain.RawDomain;
 import com.philipp_kehrbusch.gen.webdomain.target.WebElement;
-import com.philipp_kehrbusch.gen.webdomain.target.cd.CDClass;
 import com.philipp_kehrbusch.gen.webdomain.templates.TemplateController;
 import com.philipp_kehrbusch.gen.webdomain.trafos.*;
 import org.antlr.v4.runtime.CharStreams;
@@ -54,11 +53,13 @@ public class WebDomainGenerator {
 
       var elements = new WebElements();
       var generator = new TemplateController();
-      var rawDomainClasses = new RawDomainTrafo().transform(domains, settings);
+      var rawDomainClasses = new RawDomainTrafo().transform(domains);
 
       for (var trafo : getGlobalTrafos(settings.getTrafoBasePackage())) {
         var transform = getTransformMethod(trafo.getTrafoClass());
-        callGlobalTransform(trafo.getTrafoClass(), transform, rawDomainClasses, elements);
+        callGlobalTransform(trafo.getTrafoClass(), transform, rawDomainClasses.stream()
+                        .filter(domain -> isIncluded(trafo, domain)).collect(Collectors.toCollection(RawDomains::new)),
+                elements);
       }
 
       for (var trafo : getSingleTrafos(settings.getTrafoBasePackage())) {

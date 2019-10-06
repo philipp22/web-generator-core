@@ -23,6 +23,11 @@ public class RawAttributeBuilder implements IBuilder<RawAttribute> {
     return this;
   }
 
+  public RawAttributeBuilder optional(boolean optional) {
+    this.optional = optional;
+    return this;
+  }
+
   public RawAttributeBuilder setAnnotations(List<String> annotations) {
     this.annotations = annotations;
     return this;

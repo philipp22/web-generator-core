@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 public class RawDomainTrafo {
 
-  public RawDomains transform(List<WebDomainParser.DomainContext> domains, GeneratorSettings settings) {
+  public RawDomains transform(List<WebDomainParser.DomainContext> domains) {
     var res = new RawDomains();
 
     domains.forEach(domain -> {
@@ -70,6 +70,7 @@ public class RawDomainTrafo {
                               .type(attr.type.getText())
                               .name(attr.name.getText())
                               .addAnnotations(attr.ANNOTATION().stream().map(ParseTree::getText).collect(Collectors.toList()))
+                              .optional(attr.optional != null)
                               .build())
                       .collect(Collectors.toList()))
               .addRestMethods(restMethods)
