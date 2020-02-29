@@ -15,6 +15,7 @@ public class RawDomainBuilder implements IBuilder<RawDomain> {
   private List<String> annotations = new ArrayList<>();
   private List<RawAttribute> attributes = new ArrayList<>();
   private List<RawRestMethod> restMethods = new ArrayList<>();
+  private List<String> dependencies = new ArrayList<>();
 
   public RawDomainBuilder name(String name) {
     this.name = name;
@@ -38,6 +39,21 @@ public class RawDomainBuilder implements IBuilder<RawDomain> {
 
   public RawDomainBuilder addAnnotation(String annotation) {
     this.annotations.add(annotation);
+    return this;
+  }
+
+  public RawDomainBuilder setDependencys(List<String> dependencies) {
+    this.dependencies = dependencies;
+    return this;
+  }
+
+  public RawDomainBuilder addDependencies(List<String> dependencies) {
+    this.dependencies.addAll(dependencies);
+    return this;
+  }
+
+  public RawDomainBuilder addDependency(String dependency) {
+    this.dependencies.add(dependency);
     return this;
   }
 
@@ -79,7 +95,7 @@ public class RawDomainBuilder implements IBuilder<RawDomain> {
   @Override
   public RawDomain build() {
     if (isValid()) {
-      return new RawDomain(name, superType, annotations, attributes, restMethods);
+      return new RawDomain(name, superType, annotations, attributes, restMethods, dependencies);
     }
     throw new InvalidBuilderStateException(this);
   }

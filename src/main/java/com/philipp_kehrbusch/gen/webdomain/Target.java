@@ -4,6 +4,7 @@ public class Target {
 
   public static final String JAVA = "java";
   public static final String TYPESCRIPT = "typescript";
+  public static final String DART = "dart";
 
   private String language;
   private String basePath;
@@ -11,15 +12,17 @@ public class Target {
   private FileNameResolver resolver;
   private String artifactTemplatePath;
   private String basePackage;
+  private String name;
 
   public Target(String language, String basePath, String basePathHandcoded, FileNameResolver resolver,
-                String artifactTemplatePath, String basePackage) {
+                String artifactTemplatePath, String basePackage, String name) {
     this.language = language;
     this.basePath = basePath;
     this.basePathHandcoded = basePathHandcoded;
     this.resolver = resolver;
     this.artifactTemplatePath = artifactTemplatePath;
     this.basePackage = basePackage;
+    this.name = name;
   }
 
   public String getBasePackage() {
@@ -28,6 +31,14 @@ public class Target {
 
   public void setBasePackage(String basePackage) {
     this.basePackage = basePackage;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
   }
 
   public FileNameResolver getResolver() {

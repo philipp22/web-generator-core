@@ -10,7 +10,8 @@ public class ImportUtil {
     return new ArrayList<>(Arrays.asList(
             "java.util.*",
             "java.util.stream.*",
-            "java.time.*"
-    ));
+            "java.time.*",
+            "java.math.BigDecimal"
+            ));
   }
 }

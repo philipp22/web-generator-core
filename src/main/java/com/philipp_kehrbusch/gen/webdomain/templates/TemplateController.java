@@ -34,6 +34,10 @@ public class TemplateController {
   }
 
   public void generate(Target target, WebElement element, Object... args) {
+    if (target == null) {
+      return;
+    }
+
     currentInput = new HashMap<>();
     currentInput.put("element", element);
     currentInput.put("tc", this);
@@ -58,6 +62,7 @@ public class TemplateController {
               target.getResolver().resolve(element.getName()),
               target.getResolver().resolve("Super" + element.getName())));
       element.setName("Super" + element.getName());
+      element.getArtifact().setName("Super" + element.getName());
 
       element.getArtifact().getClasses().forEach(clazz -> {
         clazz.setGeneratedName("Super" + clazz.getName());
@@ -67,6 +72,10 @@ public class TemplateController {
           clazz.getAnnotations().remove("@Entity");
           clazz.getAnnotations().add("@MappedSuperclass");
         }
+      });
+
+      element.getArtifact().getInterfaces().forEach(iface -> {
+        iface.setGeneratedName("Super" + iface.getName());
       });
       return newFile;
     }

@@ -1,12 +1,31 @@
 package com.philipp_kehrbusch.gen.webdomain.source.domain;
 
-public class RawRestMethod {
-  private RestMethod method;
-  private String returnType;
+import java.util.List;
+import java.util.Map;
 
-  public RawRestMethod(RestMethod method, String returnType) {
+public class RawRestMethod {
+  private String name;
+  private RestMethod method;
+  private String bodyType;
+  private String bodyTypeName;
+  private String returnType;
+  private List<String> annotations;
+  private String route;
+  private Map<String, String> routeVariables;
+  private Map<String, String> queryParams;
+
+  public RawRestMethod(String name, RestMethod method, String bodyType, String bodyTypeName, String returnType,
+                       List<String> annotations, String route, Map<String, String> routeVariables,
+                       Map<String, String> queryParams) {
+    this.name = name;
     this.method = method;
+    this.bodyType = bodyType;
+    this.bodyTypeName = bodyTypeName;
     this.returnType = returnType;
+    this.annotations = annotations;
+    this.route = route;
+    this.routeVariables = routeVariables;
+    this.queryParams = queryParams;
   }
 
   public RestMethod getMethod() {
@@ -23,5 +42,33 @@ public class RawRestMethod {
 
   public void setReturnType(String returnType) {
     this.returnType = returnType;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public String getBodyType() {
+    return bodyType;
+  }
+
+  public List<String> getAnnotations() {
+    return annotations;
+  }
+
+  public String getRoute() {
+    return route;
+  }
+
+  public Map<String, String> getRouteVariables() {
+    return routeVariables;
+  }
+
+  public String getBodyTypeName() {
+    return bodyTypeName;
+  }
+
+  public Map<String, String> getQueryParams() {
+    return queryParams;
   }
 }

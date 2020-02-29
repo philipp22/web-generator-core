@@ -8,14 +8,16 @@ public class RawDomain {
   private List<String> annotations;
   private List<RawAttribute> attributes;
   private List<RawRestMethod> restMethods;
+  private List<String> dependencies;
 
   public RawDomain(String name, String superType, List<String> annotations, List<RawAttribute> attributes,
-                   List<RawRestMethod> restMethods) {
+                   List<RawRestMethod> restMethods, List<String> dependencies) {
     this.name = name;
     this.superType = superType;
     this.annotations = annotations;
     this.attributes = attributes;
     this.restMethods = restMethods;
+    this.dependencies = dependencies;
   }
 
   public String getName() {
@@ -56,5 +58,9 @@ public class RawDomain {
 
   public void setAttributes(List<RawAttribute> attributes) {
     this.attributes = attributes;
+  }
+
+  public List<String> getDependencies() {
+    return dependencies;
   }
 }

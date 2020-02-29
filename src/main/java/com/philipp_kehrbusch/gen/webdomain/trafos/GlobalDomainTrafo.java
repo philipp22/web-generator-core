@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface GlobalTrafo {
+public @interface GlobalDomainTrafo {
   String[] excludeAnnotated() default {};
   String[] includeAnnotated() default {};
 }

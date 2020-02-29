@@ -1,6 +1,5 @@
 package com.philipp_kehrbusch.gen.webdomain.trafos;
 
-import com.philipp_kehrbusch.gen.webdomain.GeneratorSettings;
 import com.philipp_kehrbusch.gen.webdomain.WebDomainParser;
 import com.philipp_kehrbusch.gen.webdomain.source.builders.RawAttributeBuilder;
 import com.philipp_kehrbusch.gen.webdomain.source.builders.RawDomainBuilder;
@@ -8,10 +7,15 @@ import com.philipp_kehrbusch.gen.webdomain.source.builders.RawRestMethodBuilder;
 import com.philipp_kehrbusch.gen.webdomain.source.domain.RawRestMethod;
 import com.philipp_kehrbusch.gen.webdomain.source.domain.RestMethod;
 import com.philipp_kehrbusch.gen.webdomain.source.exceptions.InvalidRestMethodException;
+import com.philipp_kehrbusch.gen.webdomain.util.RestUtil;
+import com.philipp_kehrbusch.gen.webdomain.util.StringUtil;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class RawDomainTrafo {
@@ -38,31 +42,37 @@ public class RawDomainTrafo {
             throw new InvalidRestMethodException(method.httpMethod.getText());
           }
 
-          restMethods.add(new RawRestMethodBuilder()
+          var builder = new RawRestMethodBuilder()
                   .method(methodEnum)
-                  .returnType(method.returnType.getText())
-                  .build());
+                  .name(method.name.getText())
+                  .route(method.path.getText())
+                  .setRouteVariables(RestUtil.getRouteVariables(method.path.getText()))
+                  .returnType(method.returnType.getText());
+
+          if (method.bodyType != null) {
+            builder.bodyType(method.bodyType.getText());
+            builder.bodyTypeName(method.bodyTypeName != null ?
+                    method.bodyTypeName.getText() :
+                    StringUtil.firstLower(method.bodyType.getText()));
+          }
+
+          if (method.restMethodOptions() != null) {
+            method.restMethodOptions().restMethodOption().forEach(option -> {
+              switch (option.optionName.getText()) {
+                case "queryParams":
+                  option.queryParams().attribute().forEach(attr -> {
+                    builder.addQueryParam(attr.type.getText(), attr.name.getText());
+                  });
+                  break;
+              }
+            });
+          }
+
+          restMethods.add(builder.build());
         });
-      } else {
-        restMethods.add(new RawRestMethodBuilder()
-                .method(RestMethod.GET)
-                .returnType(domain.name.getText())
-                .build());
-        restMethods.add(new RawRestMethodBuilder()
-                .method(RestMethod.PUT)
-                .returnType(domain.name.getText())
-                .build());
-        restMethods.add(new RawRestMethodBuilder()
-                .method(RestMethod.POST)
-                .returnType(domain.name.getText())
-                .build());
-        restMethods.add(new RawRestMethodBuilder()
-                .method(RestMethod.DELETE)
-                .returnType(domain.name.getText())
-                .build());
       }
 
-      res.add(new RawDomainBuilder()
+      var builder = new RawDomainBuilder()
               .addAnnotations(domain.ANNOTATION().stream().map(ParseTree::getText).collect(Collectors.toList()))
               .name(domain.name.getText())
               .addAttributes(domain.attribute().stream()
@@ -73,8 +83,12 @@ public class RawDomainTrafo {
                               .optional(attr.optional != null)
                               .build())
                       .collect(Collectors.toList()))
-              .addRestMethods(restMethods)
-              .build());
+              .addRestMethods(restMethods);
+
+      if (domain.dependencies() != null) {
+        builder.addDependencies(domain.dependencies().NAME().stream().map(ParseTree::getText).collect(Collectors.toList()));
+      }
+      res.add(builder.build());
     });
 
     return res;

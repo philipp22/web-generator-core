@@ -1,7 +1,9 @@
 package com.philipp_kehrbusch.gen.webdomain;
 
+import com.philipp_kehrbusch.gen.webdomain.coco.ContextCondition;
+import com.philipp_kehrbusch.gen.webdomain.coco.RegisterContextCondition;
 import com.philipp_kehrbusch.gen.webdomain.source.domain.RawDomain;
-import com.philipp_kehrbusch.gen.webdomain.target.WebElement;
+import com.philipp_kehrbusch.gen.webdomain.source.view.RawView;
 import com.philipp_kehrbusch.gen.webdomain.templates.TemplateController;
 import com.philipp_kehrbusch.gen.webdomain.trafos.*;
 import org.antlr.v4.runtime.CharStreams;
@@ -41,6 +43,10 @@ public class WebDomainGenerator {
         throw new WebDomainGeneratorException("Model path not found!");
       }
       var domains = new ArrayList<WebDomainParser.DomainContext>();
+      var views = new ArrayList<WebDomainParser.ViewContext>();
+
+      var cocos = getContextConditions();
+
       for (var file : Objects.requireNonNull(modelDir.listFiles())) {
         System.out.println("Parsing file " + file.getName());
         var stream = CharStreams.fromStream(new FileInputStream(file));
@@ -48,25 +54,63 @@ public class WebDomainGenerator {
         CommonTokenStream commonTokenStream = new CommonTokenStream(lexer);
         WebDomainParser parser = new WebDomainParser(commonTokenStream);
         WebDomainParser.ArtifactContext artifact = parser.artifact();
+
+        for (var coco : cocos) {
+          var error = coco.check(artifact);
+          if (error.isPresent()) {
+            throw new WebDomainGeneratorException("Context condition failed: " + error.get());
+          }
+        }
+
         domains.addAll(artifact.domain());
+        views.addAll(artifact.view());
       }
 
       var elements = new WebElements();
       var generator = new TemplateController();
       var rawDomainClasses = new RawDomainTrafo().transform(domains);
+      var rawViewClasses = new RawViewTrafo().transform(views);
 
-      for (var trafo : getGlobalTrafos(settings.getTrafoBasePackage())) {
+      for (var trafo : getGlobalDomainTrafos(settings.getTrafoBasePackage())) {
         var transform = getTransformMethod(trafo.getTrafoClass());
-        callGlobalTransform(trafo.getTrafoClass(), transform, rawDomainClasses.stream()
-                        .filter(domain -> isIncluded(trafo, domain)).collect(Collectors.toCollection(RawDomains::new)),
+        callDomainTransform(
+                trafo.getTrafoClass(),
+                transform,
+                rawDomainClasses.stream()
+                        .filter(domain -> isIncluded(trafo, domain))
+                        .collect(Collectors.toCollection(RawDomains::new)),
+                RawDomains.class,
+                rawViewClasses,
                 elements);
       }
 
-      for (var trafo : getSingleTrafos(settings.getTrafoBasePackage())) {
+      for (var trafo : getGlobalViewTrafos(settings.getTrafoBasePackage())) {
+        var transform = getTransformMethod(trafo.getTrafoClass());
+        callViewTransform(
+                trafo.getTrafoClass(),
+                transform,
+                rawViewClasses.stream()
+                        .filter(view -> isIncluded(trafo, view))
+                        .collect(Collectors.toCollection(RawViews::new)),
+                RawViews.class,
+                rawDomainClasses,
+                elements);
+      }
+
+      for (var trafo : getSingleDomainTrafos(settings.getTrafoBasePackage())) {
         var transform = getTransformMethod(trafo.getTrafoClass());
         for (var domainClass : rawDomainClasses) {
           if (isIncluded(trafo, domainClass)) {
-            callSingleTransform(trafo.getTrafoClass(), transform, domainClass, elements);
+            callDomainTransform(trafo.getTrafoClass(), transform, domainClass, RawDomain.class, rawViewClasses, elements);
+          }
+        }
+      }
+
+      for (var trafo : getSingleViewTrafos(settings.getTrafoBasePackage())) {
+        var transform = getTransformMethod(trafo.getTrafoClass());
+        for (var viewClass : rawViewClasses) {
+          if (isIncluded(trafo, viewClass)) {
+            callViewTransform(trafo.getTrafoClass(), transform, viewClass, RawView.class, rawDomainClasses, elements);
           }
         }
       }
@@ -77,7 +121,7 @@ public class WebDomainGenerator {
           generator.generate(settings.getTargets().get(el.getTarget()), el);
         }
       });
-    } catch (IOException e) {
+    } catch (IOException | GeneratorException e) {
       e.printStackTrace();
     }
   }
@@ -88,6 +132,17 @@ public class WebDomainGenerator {
                     Arrays.asList(trafo.getIncludeAnnotations()).contains(annotation.substring(1)));
     var excluded = trafo.getExcludeAnnotations().length > 0 &&
             domain.getAnnotations().stream().anyMatch(annotation ->
+                    Arrays.asList(trafo.getExcludeAnnotations()).contains(annotation.substring(1)));
+
+    return included && !excluded;
+  }
+
+  private boolean isIncluded(Trafo trafo, RawView view) {
+    var included = trafo.getIncludeAnnotations().length == 0 ||
+            view.getAnnotations().stream().anyMatch(annotation ->
+                    Arrays.asList(trafo.getIncludeAnnotations()).contains(annotation.substring(1)));
+    var excluded = trafo.getExcludeAnnotations().length > 0 &&
+            view.getAnnotations().stream().anyMatch(annotation ->
                     Arrays.asList(trafo.getExcludeAnnotations()).contains(annotation.substring(1)));
 
     return included && !excluded;
@@ -107,28 +162,72 @@ public class WebDomainGenerator {
     return res;
   }
 
-  private List<Trafo> getSingleTrafos(String basePackage) {
-    return getAnnotatedClasses(SingleTrafo.class, basePackage).stream()
+  private List<ContextCondition> getContextConditions() throws GeneratorException {
+    var cocoClasses = getAnnotatedClasses(RegisterContextCondition.class, "com.philipp_kehrbusch.gen.webdomain.coco");
+    var res = new ArrayList<ContextCondition>();
+
+    for (var cocoClass : cocoClasses) {
+      var constructorFound = false;
+      for (var constructor : cocoClass.getConstructors()) {
+        if (constructor.getParameters().length == 0) {
+          try {
+            var coco = constructor.newInstance();
+            if (!(coco instanceof ContextCondition)) {
+              throw new GeneratorException("Context condition " + cocoClass.getName() + " must implement ContextCondition");
+            }
+            res.add((ContextCondition) coco);
+            constructorFound = true;
+            break;
+          } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+      if (!constructorFound) {
+        throw new GeneratorException("Context condition " + cocoClass.getName() + " requires a no-argument constructor");
+      }
+    }
+    return res;
+  }
+
+  private List<Trafo> getSingleDomainTrafos(String basePackage) {
+    return getAnnotatedClasses(SingleDomainTrafo.class, basePackage).stream()
             .map(clazz -> {
-              var includes = clazz.getAnnotation(SingleTrafo.class).includeAnnotated();
-              var excludes = clazz.getAnnotation(SingleTrafo.class).excludeAnnotated();
+              var includes = clazz.getAnnotation(SingleDomainTrafo.class).includeAnnotated();
+              var excludes = clazz.getAnnotation(SingleDomainTrafo.class).excludeAnnotated();
               return new Trafo(clazz, includes, excludes);
             })
             .collect(Collectors.toList());
   }
 
-  private List<Trafo> getGlobalTrafos(String basePackage) {
-    return getAnnotatedClasses(GlobalTrafo.class, basePackage).stream()
+  private List<Trafo> getGlobalDomainTrafos(String basePackage) {
+    return getAnnotatedClasses(GlobalDomainTrafo.class, basePackage).stream()
             .map(clazz -> {
-              var includes = clazz.getAnnotation(GlobalTrafo.class).includeAnnotated();
-              var excludes = clazz.getAnnotation(GlobalTrafo.class).excludeAnnotated();
+              var includes = clazz.getAnnotation(GlobalDomainTrafo.class).includeAnnotated();
+              var excludes = clazz.getAnnotation(GlobalDomainTrafo.class).excludeAnnotated();
               return new Trafo(clazz, includes, excludes);
             })
             .collect(Collectors.toList());
   }
 
-  private Class<?> getDomainTrafo(String basePackage) {
-    return getAnnotatedClasses(DomainTrafo.class, basePackage).get(0);
+  private List<Trafo> getSingleViewTrafos(String basePackage) {
+    return getAnnotatedClasses(SingleViewTrafo.class, basePackage).stream()
+            .map(clazz -> {
+              var includes = clazz.getAnnotation(SingleViewTrafo.class).includeAnnotated();
+              var excludes = clazz.getAnnotation(SingleViewTrafo.class).excludeAnnotated();
+              return new Trafo(clazz, includes, excludes);
+            })
+            .collect(Collectors.toList());
+  }
+
+  private List<Trafo> getGlobalViewTrafos(String basePackage) {
+    return getAnnotatedClasses(GlobalViewTrafo.class, basePackage).stream()
+            .map(clazz -> {
+              var includes = clazz.getAnnotation(GlobalViewTrafo.class).includeAnnotated();
+              var excludes = clazz.getAnnotation(GlobalViewTrafo.class).excludeAnnotated();
+              return new Trafo(clazz, includes, excludes);
+            })
+            .collect(Collectors.toList());
   }
 
   private Method getTransformMethod(Class<?> trafo) throws TransformMethodNotFoundException {
@@ -140,16 +239,49 @@ public class WebDomainGenerator {
     throw new TransformMethodNotFoundException(trafo.getName());
   }
 
-  private void callGlobalTransform(Class<?> trafoClass,
-                                   Method transform,
-                                   RawDomains domainClasses,
-                                   WebElements elements) throws WebDomainGeneratorException {
+  private <T> void callDomainTransform(Class<?> trafoClass,
+                                       Method transform,
+                                       T classes,
+                                       Class<T> classesClass,
+                                       RawViews views,
+                                       WebElements elements) throws WebDomainGeneratorException {
     var trafo = getTrafoInstance(trafoClass);
     try {
       var params = new Object[transform.getParameterCount()];
       for (int i = 0; i < transform.getParameterCount(); i++) {
         var paramType = transform.getParameterTypes()[i];
-        if (paramType == RawDomains.class) {
+        if (paramType == classesClass) {
+          params[i] = classes;
+        } else if (paramType == RawViews.class) {
+          params[i] = views;
+        } else if (paramType == GeneratorSettings.class) {
+          params[i] = settings;
+        } else if (paramType == WebElements.class) {
+          params[i] = elements;
+        } else {
+          throw new UnknownTrafoArgumentException(paramType.getTypeName(), paramType.getName());
+        }
+      }
+      transform.invoke(trafo, params);
+    } catch (IllegalAccessException | InvocationTargetException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private <T> void callViewTransform(Class<?> trafoClass,
+                                     Method transform,
+                                     T classes,
+                                     Class<T> classesClass,
+                                     RawDomains domainClasses,
+                                     WebElements elements) throws WebDomainGeneratorException {
+    var trafo = getTrafoInstance(trafoClass);
+    try {
+      var params = new Object[transform.getParameterCount()];
+      for (int i = 0; i < transform.getParameterCount(); i++) {
+        var paramType = transform.getParameterTypes()[i];
+        if (paramType == classesClass) {
+          params[i] = classes;
+        } else if (paramType == RawDomains.class) {
           params[i] = domainClasses;
         } else if (paramType == GeneratorSettings.class) {
           params[i] = settings;
@@ -160,43 +292,6 @@ public class WebDomainGenerator {
         }
       }
       transform.invoke(trafo, params);
-    } catch (IllegalAccessException | InvocationTargetException e) {
-      e.printStackTrace();
-    }
-  }
-
-  private void callSingleTransform(Class<?> trafoClass,
-                                   Method transform,
-                                   RawDomain domainClass,
-                                   WebElements elements) throws WebDomainGeneratorException {
-    var trafo = getTrafoInstance(trafoClass);
-    try {
-      var params = new Object[transform.getParameterCount()];
-      for (int i = 0; i < transform.getParameterCount(); i++) {
-        var paramType = transform.getParameterTypes()[i];
-        if (paramType == RawDomain.class) {
-          params[i] = domainClass;
-        } else if (paramType == GeneratorSettings.class) {
-          params[i] = settings;
-        } else if (paramType == WebElements.class) {
-          params[i] = elements;
-        } else {
-          throw new UnknownTrafoArgumentException(paramType.getTypeName(), paramType.getName());
-        }
-      }
-      transform.invoke(trafo, params);
-    } catch (IllegalAccessException | InvocationTargetException e) {
-      e.printStackTrace();
-    }
-  }
-
-  private void callDomainTrafo(Class<?> trafoClass,
-                               Method transform,
-                               List<WebDomainParser.DomainContext> domains,
-                               List<WebElement> elements) throws TrafoConstructorMissingException {
-    var trafo = getTrafoInstance(trafoClass);
-    try {
-      transform.invoke(trafo, domains, elements, settings);
     } catch (IllegalAccessException | InvocationTargetException e) {
       e.printStackTrace();
     }

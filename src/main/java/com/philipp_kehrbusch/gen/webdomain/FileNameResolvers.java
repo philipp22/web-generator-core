@@ -16,6 +16,7 @@ public class FileNameResolvers {
           "state",
           "form"
   ));
+  public static final FileNameResolver DART = name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, name) + ".dart";
 
   public static FileNameResolver typescriptResolver(List<String> groups) {
     return name -> {

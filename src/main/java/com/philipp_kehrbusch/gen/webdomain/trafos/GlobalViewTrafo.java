@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface SingleTrafo {
+public @interface GlobalViewTrafo {
   String[] excludeAnnotated() default {};
   String[] includeAnnotated() default {};
 }
