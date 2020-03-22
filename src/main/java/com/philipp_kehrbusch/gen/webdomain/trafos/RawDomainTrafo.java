@@ -64,6 +64,11 @@ public class RawDomainTrafo {
                     builder.addQueryParam(attr.type.getText(), attr.name.getText());
                   });
                   break;
+                case "auth":
+                  var authRequired = option.auth.getText();
+                  if (authRequired.equals("false")) {
+                    builder.authRequired(false);
+                  }
               }
             });
           }

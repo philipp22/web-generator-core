@@ -1,5 +1,7 @@
 grammar WebDomain;
 
+BOOL: ('t' 'r' 'u' 'e') | ('f' 'a' 'l' 's' 'e');
+
 fragment
 StringCharacter
 	:	~["\\\r\n]
@@ -79,7 +81,7 @@ restMethodOptions:
 	'}';
 
 restMethodOption:
-	optionName=NAME ':' queryParams;
+	optionName=NAME+ ':' (auth=BOOL | queryParams);
 
 queryParams:
 	'['

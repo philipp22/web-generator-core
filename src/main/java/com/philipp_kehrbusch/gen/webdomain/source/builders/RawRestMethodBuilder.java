@@ -20,6 +20,12 @@ public class RawRestMethodBuilder implements IBuilder<RawRestMethod> {
   private List<String> annotations = new ArrayList<>();
   private Map<String, String> routeVariables = new HashMap<>();
   private Map<String, String> queryParams = new HashMap<>();
+  private boolean authRequired = true;
+
+  public RawRestMethodBuilder authRequired(boolean required) {
+    this.authRequired = required;
+    return this;
+  }
 
   public RawRestMethodBuilder route(String route) {
     this.route = route;
@@ -95,7 +101,7 @@ public class RawRestMethodBuilder implements IBuilder<RawRestMethod> {
   public RawRestMethod build() {
     if (isValid()) {
       return new RawRestMethod(name, httpMethod, bodyType, bodyTypeName, returnType, annotations, route, routeVariables,
-              queryParams);
+              queryParams, authRequired);
     } else {
       throw new InvalidBuilderStateException(this);
     }

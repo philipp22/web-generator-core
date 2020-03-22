@@ -13,10 +13,11 @@ public class RawRestMethod {
   private String route;
   private Map<String, String> routeVariables;
   private Map<String, String> queryParams;
+  private boolean authRequired;
 
   public RawRestMethod(String name, RestMethod method, String bodyType, String bodyTypeName, String returnType,
                        List<String> annotations, String route, Map<String, String> routeVariables,
-                       Map<String, String> queryParams) {
+                       Map<String, String> queryParams, boolean authRequired) {
     this.name = name;
     this.method = method;
     this.bodyType = bodyType;
@@ -26,6 +27,7 @@ public class RawRestMethod {
     this.route = route;
     this.routeVariables = routeVariables;
     this.queryParams = queryParams;
+    this.authRequired = authRequired;
   }
 
   public RestMethod getMethod() {
@@ -70,5 +72,13 @@ public class RawRestMethod {
 
   public Map<String, String> getQueryParams() {
     return queryParams;
+  }
+
+  public boolean isAuthRequired() {
+    return authRequired;
+  }
+
+  public void setAuthRequired(boolean authRequired) {
+    this.authRequired = authRequired;
   }
 }

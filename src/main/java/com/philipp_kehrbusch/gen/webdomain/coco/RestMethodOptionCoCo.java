@@ -12,7 +12,8 @@ import static java.util.Optional.of;
 public class RestMethodOptionCoCo implements ContextCondition {
 
   private static List<String> validOptionNames = Arrays.asList(
-          "queryParams"
+          "queryParams",
+          "auth"
   );
 
   public RestMethodOptionCoCo() {

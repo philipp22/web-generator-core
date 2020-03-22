@@ -5,6 +5,7 @@ import com.philipp_kehrbusch.gen.webdomain.source.domain.RawRestMethod;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class RestUtil {
 
@@ -20,7 +21,14 @@ public class RestUtil {
   }
 
   public static String createRestUrl(RawRestMethod restMethod) {
-    return "baseUrl + \"" + restMethod.getRoute().replaceAll("\\{([^\\s]+) ([^\\s]+)}", "\" + $2 + \"") + "\"";
+    var queryString = restMethod.getQueryParams().size() > 0 ?
+            "+ \"?" + String.join("&",
+                    restMethod.getQueryParams().entrySet().stream()
+                            .map(entry -> entry.getKey() + "=\" + " + entry.getKey() + "+ \"")
+                            .collect(Collectors.toList())) + "\""
+            : "";
+    return "baseUrl + \"" + restMethod.getRoute().replaceAll("\\{([^\\s]+) ([^\\s]+)}", "\" + $2 + \"") +
+            "\"" + queryString;
   }
 
   public static String getBodyName(RawRestMethod restMethod) {

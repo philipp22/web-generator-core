@@ -4,7 +4,8 @@ public class TypeUtil {
 
   public static String javaToTypescript(String type) {
     if (type.equalsIgnoreCase("int") || type.equalsIgnoreCase("long") ||
-            type.equalsIgnoreCase("float") || type.equalsIgnoreCase("double")) {
+            type.equalsIgnoreCase("float") || type.equalsIgnoreCase("double") ||
+            type.equalsIgnoreCase("Integer")) {
       return "number";
     }
     if (type.equals("String")) {
