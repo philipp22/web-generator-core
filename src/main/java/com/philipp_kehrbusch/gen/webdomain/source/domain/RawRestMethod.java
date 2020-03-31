@@ -12,12 +12,12 @@ public class RawRestMethod {
   private List<String> annotations;
   private String route;
   private Map<String, String> routeVariables;
-  private Map<String, String> queryParams;
+  private List<RawAttribute> queryParams;
   private boolean authRequired;
 
   public RawRestMethod(String name, RestMethod method, String bodyType, String bodyTypeName, String returnType,
                        List<String> annotations, String route, Map<String, String> routeVariables,
-                       Map<String, String> queryParams, boolean authRequired) {
+                       List<RawAttribute> queryParams, boolean authRequired) {
     this.name = name;
     this.method = method;
     this.bodyType = bodyType;
@@ -70,7 +70,7 @@ public class RawRestMethod {
     return bodyTypeName;
   }
 
-  public Map<String, String> getQueryParams() {
+  public List<RawAttribute> getQueryParams() {
     return queryParams;
   }
 

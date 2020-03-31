@@ -2,7 +2,7 @@ package com.philipp_kehrbusch.gen.webdomain.util;
 
 import com.philipp_kehrbusch.gen.webdomain.source.domain.RawRestMethod;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -12,7 +12,7 @@ public class RestUtil {
   public static Map<String, String> getRouteVariables(String route) {
     var pattern = Pattern.compile("\\{([^\\s]+) ([^\\s]+)}");
     var matcher = pattern.matcher(route);
-    var res = new HashMap<String, String>();
+    var res = new LinkedHashMap<String, String>();
 
     while (matcher.find()) {
       res.put(matcher.group(2), matcher.group(1));
@@ -23,8 +23,8 @@ public class RestUtil {
   public static String createRestUrl(RawRestMethod restMethod) {
     var queryString = restMethod.getQueryParams().size() > 0 ?
             "+ \"?" + String.join("&",
-                    restMethod.getQueryParams().entrySet().stream()
-                            .map(entry -> entry.getKey() + "=\" + " + entry.getKey() + "+ \"")
+                    restMethod.getQueryParams().stream()
+                            .map(entry -> entry.getName() + "=\" + " + entry.getName() + "+ \"")
                             .collect(Collectors.toList())) + "\""
             : "";
     return "baseUrl + \"" + restMethod.getRoute().replaceAll("\\{([^\\s]+) ([^\\s]+)}", "\" + $2 + \"") +

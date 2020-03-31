@@ -12,10 +12,7 @@ import com.philipp_kehrbusch.gen.webdomain.util.StringUtil;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class RawDomainTrafo {
@@ -61,7 +58,11 @@ public class RawDomainTrafo {
               switch (option.optionName.getText()) {
                 case "queryParams":
                   option.queryParams().attribute().forEach(attr -> {
-                    builder.addQueryParam(attr.type.getText(), attr.name.getText());
+                    builder.addQueryParam(new RawAttributeBuilder()
+                            .type(attr.type.getText())
+                            .name(attr.name.getText())
+                            .optional(attr.optional != null)
+                            .build());
                   });
                   break;
                 case "auth":

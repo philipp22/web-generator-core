@@ -1,14 +1,12 @@
 package com.philipp_kehrbusch.gen.webdomain.source.builders;
 
+import com.philipp_kehrbusch.gen.webdomain.source.domain.RawAttribute;
 import com.philipp_kehrbusch.gen.webdomain.source.domain.RawRestMethod;
 import com.philipp_kehrbusch.gen.webdomain.source.domain.RestMethod;
 import com.philipp_kehrbusch.gen.webdomain.target.builders.IBuilder;
 import com.philipp_kehrbusch.gen.webdomain.target.builders.InvalidBuilderStateException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class RawRestMethodBuilder implements IBuilder<RawRestMethod> {
   private RestMethod httpMethod;
@@ -18,8 +16,8 @@ public class RawRestMethodBuilder implements IBuilder<RawRestMethod> {
   private String returnType;
   private String route;
   private List<String> annotations = new ArrayList<>();
-  private Map<String, String> routeVariables = new HashMap<>();
-  private Map<String, String> queryParams = new HashMap<>();
+  private Map<String, String> routeVariables = new LinkedHashMap<>();
+  private List<RawAttribute> queryParams = new ArrayList<>();
   private boolean authRequired = true;
 
   public RawRestMethodBuilder authRequired(boolean required) {
@@ -82,13 +80,13 @@ public class RawRestMethodBuilder implements IBuilder<RawRestMethod> {
     return this;
   }
 
-  public RawRestMethodBuilder setQueryParams(Map<String, String> queryParams) {
+  public RawRestMethodBuilder setQueryParams(List<RawAttribute> queryParams) {
     this.queryParams = queryParams;
     return this;
   }
 
-  public RawRestMethodBuilder addQueryParam(String type, String name) {
-    this.queryParams.put(name, type);
+  public RawRestMethodBuilder addQueryParam(RawAttribute queryParam) {
+    this.queryParams.add(queryParam);
     return this;
   }
 
